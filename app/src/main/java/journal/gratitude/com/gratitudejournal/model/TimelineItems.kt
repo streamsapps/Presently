@@ -2,7 +2,6 @@ package journal.gratitude.com.gratitudejournal.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import journal.gratitude.com.gratitudejournal.R
 import org.threeten.bp.LocalDate
 
 sealed class TimelineItem
@@ -18,10 +17,12 @@ data class Milestone(val number: Int,
                      val numString: String): TimelineItem() {
 
     companion object {
-        val milestones = arrayOf(5, 10, 25, 50, 100, 150, 200, 250, 300, 365, 400, 450, 500)
+        fun isMilestone(number: Int): Boolean {
+            return number == 5 || number == 10 || (number % 25) == 0
+        }
 
         fun create(number: Int): Milestone {
-            require(milestones.contains(number))
+            require(isMilestone(number))
 
             return Milestone(number, number.toString())
         }

@@ -7,44 +7,45 @@ import android.content.Context
 import android.content.Context.ALARM_SERVICE
 import android.content.Intent
 import android.content.pm.PackageManager
-import androidx.preference.PreferenceManager
-import journal.gratitude.com.gratitudejournal.ui.settings.SettingsFragment.Companion.NOTIFS
-import journal.gratitude.com.gratitudejournal.ui.settings.SettingsFragment.Companion.NOTIF_PREF_TIME
+import com.presently.settings.PresentlySettings
 import org.threeten.bp.LocalTime
 import java.util.*
 
 /**
- * Schedules or cancels repeating broadcasts to the ReminderReceiver at the specified time
+ * Schedules or cancels broadcasts to the ReminderReceiver at the specified time
  *
  */
 class NotificationScheduler {
 
     companion object {
         const val ALARM_TYPE_RTC = 100
-        const val PENDING_INTENT = 101
+        const val PENDING_INTENT = 101 //used for old repeating alarms
+        const val EXACT_ALARM_REQUEST_CODE = 102 //new request code for exact alarms
     }
 
-    // Called when app starts, notification time changes, device reboots, time zone changes, etc
-    fun configureNotifications(context: Context) {
-        val sharedPref = PreferenceManager.getDefaultSharedPreferences(context)
-        val hasNotificationsOn = sharedPref.getBoolean(NOTIFS, true)
-        if (hasNotificationsOn) {
-            val prefTime = sharedPref.getString(NOTIF_PREF_TIME, "21:00")
-            val alarmTime = LocalTime.parse(prefTime)
+    // Called to ensure the notification is properly scheduled or cancelled
+    fun configureNotifications(context: Context, settings: PresentlySettings) {
+        val hasNotificationsOn = settings.hasEnabledNotifications()
+        val hasDisabledAlarmReminders = settings.hasUserDisabledAlarmReminders(context)
+        if (hasNotificationsOn && !hasDisabledAlarmReminders) {
+            val alarmTime = settings.getNotificationTime()
             setNotificationTime(context, alarmTime)
+        } else {
+            disableNotifications(context)
         }
     }
 
+    //sets the exact alarm, that when triggered will send the notification
     fun setNotificationTime(context: Context, alarmTime: LocalTime) {
-        val intent = Intent(context, ReminderReceiver::class.java)
-        val alarmIntent = intent.let {
-            PendingIntent.getBroadcast(
+        //cancel the old repeating alarm if present (we want to only use exact alarms from now on)
+        cancelOldAlarms(context)
+
+        val alarmIntent = PendingIntent.getBroadcast(
                 context,
-                PENDING_INTENT,
-                it,
-                0 //implicitly cancel the existing alarm and then set it for the newly-specified time
+                EXACT_ALARM_REQUEST_CODE,
+                Intent(context, ReminderReceiver::class.java),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
-        }
 
         val alarmTimeCal = if (LocalTime.now().isAfter(alarmTime)) {
             //today's alarm already happened use start the next one tomorrow
@@ -72,10 +73,9 @@ class NotificationScheduler {
         )
 
         val alarmManager = context.getSystemService(ALARM_SERVICE) as AlarmManager
-        alarmManager.setInexactRepeating(
+        alarmManager.setExactAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             alarmTimeCal.timeInMillis,
-            AlarmManager.INTERVAL_DAY,
             alarmIntent
         )
     }
@@ -87,13 +87,13 @@ class NotificationScheduler {
 
     //cancels any existing notifications
     private fun cancelNotifications(context: Context) {
-        val intent = Intent(context, ReminderReceiver::class.java)
-        val pendingIntent = intent.let {
+        val pendingIntent =
             PendingIntent.getBroadcast(
                 context,
-                PENDING_INTENT, it, 0
+                EXACT_ALARM_REQUEST_CODE,
+                Intent(context, ReminderReceiver::class.java),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
-        }
 
         pendingIntent.cancel()
         val alarmManager = context.getSystemService(ALARM_SERVICE) as AlarmManager
@@ -108,5 +108,19 @@ class NotificationScheduler {
             PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
             PackageManager.DONT_KILL_APP
         )
+    }
+
+    private fun cancelOldAlarms(context: Context) {
+        val pendingIntent =
+            PendingIntent.getBroadcast(
+                context,
+                PENDING_INTENT,
+                Intent(context, ReminderReceiver::class.java),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+        pendingIntent.cancel()
+        val alarmManager = context.getSystemService(ALARM_SERVICE) as AlarmManager
+        alarmManager.cancel(pendingIntent)
     }
 }

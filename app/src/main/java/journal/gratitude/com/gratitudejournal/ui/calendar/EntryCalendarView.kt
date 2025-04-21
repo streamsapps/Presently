@@ -2,28 +2,39 @@ package journal.gratitude.com.gratitudejournal.ui.calendar
 
 import android.content.Context
 import android.util.AttributeSet
+import android.util.TypedValue
+import android.view.LayoutInflater
 import android.view.View
-import androidx.constraintlayout.widget.ConstraintLayout
+import android.widget.FrameLayout
+import androidx.core.view.isVisible
 import com.github.sundeepk.compactcalendarview.CompactCalendarView
 import com.github.sundeepk.compactcalendarview.domain.Event
+import com.presently.settings.PresentlySettings
+import dagger.hilt.android.AndroidEntryPoint
 import journal.gratitude.com.gratitudejournal.R
-import journal.gratitude.com.gratitudejournal.util.toMonthString
+import journal.gratitude.com.gratitudejournal.databinding.CalendarFragmentBinding
+import journal.gratitude.com.gratitudejournal.databinding.SearchFragmentBinding
 import journal.gratitude.com.gratitudejournal.util.getYearString
 import journal.gratitude.com.gratitudejournal.util.toDate
 import journal.gratitude.com.gratitudejournal.util.toLocalDate
-import kotlinx.android.synthetic.main.calendar_fragment.view.*
+import journal.gratitude.com.gratitudejournal.util.toMonthString
 import org.threeten.bp.LocalDate
 import java.util.*
-import android.util.TypedValue
+import javax.inject.Inject
 
+@AndroidEntryPoint
+class EntryCalendarView : FrameLayout {
 
-class EntryCalendarView : ConstraintLayout {
+    @Inject lateinit var settings: PresentlySettings
 
     private var monthString = "${Date().toMonthString()} ${Date().getYearString()}"
     private var entryCalendarListener: EntryCalendarListener? = null
     private var writtenDates = emptyList<LocalDate>()
 
     private lateinit var calendar: CompactCalendarView
+
+    private var _binding: CalendarFragmentBinding? = null
+    private val binding get() = _binding!!
 
     constructor(context: Context) : super(context) {
         init()
@@ -37,20 +48,22 @@ class EntryCalendarView : ConstraintLayout {
     }
 
     private fun init() {
-        val view = View.inflate(context, R.layout.calendar_fragment, this)
-
+        _binding = CalendarFragmentBinding.inflate(LayoutInflater.from(context), this)
         val locale = Locale.getDefault()
 
-        calendar = view.compactcalendar_view
+        val firstDayOfWeek = settings.getFirstDayOfWeek()
+
+        calendar = binding.compactcalendarView
+        calendar.setFirstDayOfWeek(firstDayOfWeek)
         calendar.setLocale(TimeZone.getDefault(), locale)
         if (locale.language == "ar") {
             //use English characters since the library doesn't support Arabic
             calendar.setLocale(TimeZone.getDefault(), Locale.ENGLISH)
         }
         calendar.shouldDrawIndicatorsBelowSelectedDays(true)
-        view.month_year.text = monthString
+        binding.monthYear.text = monthString
 
-        view.compactcalendar_view.setListener(object :
+        binding.compactcalendarView.setListener(object :
             CompactCalendarView.CompactCalendarViewListener {
             override fun onDayClick(dateClicked: Date) {
                 if (!dateClicked.after(Date())) {
@@ -65,16 +78,26 @@ class EntryCalendarView : ConstraintLayout {
             override fun onMonthScroll(firstDayOfNewMonth: Date) {
                 monthString =
                     "${firstDayOfNewMonth.toMonthString()} ${firstDayOfNewMonth.getYearString()}"
-                month_year.text = monthString
+                binding.monthYear.text = monthString
             }
         })
 
-        view.close_button.setOnClickListener {
+        binding.closeButton.setOnClickListener {
             entryCalendarListener?.onCloseClicked()
         }
 
-        view.calendar_screen_background.setOnClickListener {
+        setOnClickListener {
             entryCalendarListener?.onCloseClicked()
+        }
+        binding.random.setOnClickListener {
+            val randomDate = writtenDates.randomOrNull()
+            randomDate?.let {
+                entryCalendarListener?.onDateClicked(
+                    randomDate.toDate(),
+                    false,
+                    writtenDates.size
+                )
+            }
         }
     }
 
@@ -88,6 +111,7 @@ class EntryCalendarView : ConstraintLayout {
             calendar.addEvent(Event(getBackgroundColorForTheme(), date.toDate().time))
         }
         writtenDates = dates
+        binding.random.isVisible = dates.isNotEmpty()
     }
 
     private fun getBackgroundColorForTheme(): Int {

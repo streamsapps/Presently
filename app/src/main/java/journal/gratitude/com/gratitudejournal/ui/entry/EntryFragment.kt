@@ -3,170 +3,185 @@ package journal.gratitude.com.gratitudejournal.ui.entry
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
+import android.content.res.Resources
+import android.graphics.Color
 import android.graphics.drawable.Animatable
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
 import android.widget.Toast
-import androidx.core.content.ContextCompat.getSystemService
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.fragment.findNavController
-import com.google.firebase.analytics.FirebaseAnalytics
-import dagger.android.support.DaggerFragment
-import journal.gratitude.com.gratitudejournal.R
-import journal.gratitude.com.gratitudejournal.databinding.EntryFragmentBinding
-import journal.gratitude.com.gratitudejournal.model.CLICKED_PROMPT
-import journal.gratitude.com.gratitudejournal.model.COPIED_QUOTE
-import journal.gratitude.com.gratitudejournal.model.EDITED_EXISTING_ENTRY
-import journal.gratitude.com.gratitudejournal.model.SHARED_ENTRY
-import journal.gratitude.com.gratitudejournal.ui.dialog.CelebrateDialogFragment
-import kotlinx.android.synthetic.main.entry_fragment.*
-import org.threeten.bp.LocalDate
-import javax.inject.Inject
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
-import androidx.preference.PreferenceManager
+import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
+import androidx.fragment.app.Fragment
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.airbnb.mvrx.MavericksView
+import com.airbnb.mvrx.asMavericksArgs
+import com.airbnb.mvrx.fragmentViewModel
+import com.airbnb.mvrx.withState
 import com.jakewharton.rxbinding2.widget.RxTextView
+import com.presently.logging.AnalyticsLogger
+import com.presently.settings.BackupCadence
+import com.presently.settings.PresentlySettings
+import com.presently.sharing.view.SharingFragment
+import com.presently.ui.setStatusBarColorsForBackground
+import dagger.hilt.android.AndroidEntryPoint
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
-import journal.gratitude.com.gratitudejournal.model.Milestone.Companion.milestones
-import journal.gratitude.com.gratitudejournal.ui.settings.SettingsFragment.Companion.BACKUP_CADENCE
-import journal.gratitude.com.gratitudejournal.util.backups.dropbox.DropboxUploader
+import journal.gratitude.com.gratitudejournal.R
+import journal.gratitude.com.gratitudejournal.databinding.EntryFragmentBinding
+import journal.gratitude.com.gratitudejournal.model.COPIED_QUOTE
+import journal.gratitude.com.gratitudejournal.model.SHARED_ENTRY
+import journal.gratitude.com.gratitudejournal.ui.dialog.CelebrateDialogFragment
 import journal.gratitude.com.gratitudejournal.util.backups.UploadToCloudWorker
+import journal.gratitude.com.gratitudejournal.util.backups.dropbox.DropboxUploader
+import journal.gratitude.com.gratitudejournal.util.toFullString
+import org.threeten.bp.LocalDate
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
+@AndroidEntryPoint
+class EntryFragment : Fragment(), MavericksView, EntryScreenCallbacks {
 
-class EntryFragment : DaggerFragment() {
-
+    private val viewModel: EntryViewModel by fragmentViewModel()
     @Inject
-    lateinit var viewModelFactory: ViewModelProvider.Factory
+    lateinit var settings: PresentlySettings
+    @Inject
+    lateinit var analytics: AnalyticsLogger
 
-    private val viewModel by viewModels<EntryViewModel> { viewModelFactory }
-    private lateinit var binding: EntryFragmentBinding
-    private lateinit var firebaseAnalytics: FirebaseAnalytics
+    private var _binding: EntryFragmentBinding? = null
+    private val binding get() = _binding!!
 
     private val compositeDisposable = CompositeDisposable()
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        binding = EntryFragmentBinding.inflate(inflater, container, false)
-        binding.viewModel = viewModel
-
-        return binding.root
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val passedInDate = arguments?.getString(DATE) ?: LocalDate.now().toString()
-        viewModel.setDate(passedInDate)
+        viewModel.onCreate()
 
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                val isEdited = viewModel.hasUserEdits.get()
-                val isEmpty = viewModel.isEmpty.get()
-                if (isEdited && !isEmpty) {
-                    showUnsavedEntryDialog()
-                } else {
-                    findNavController().navigateUp()
+                withState(viewModel) {
+                    if (it.hasUserEdits && it.editsWereMade) {
+                        showUnsavedEntryDialog(false)
+                    } else {
+                        requireActivity().supportFragmentManager.popBackStack()
+                    }
                 }
             }
         }
         requireActivity().onBackPressedDispatcher.addCallback(this, callback)
     }
 
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = EntryFragmentBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
 
-        firebaseAnalytics = FirebaseAnalytics.getInstance(context!!)
+        prepareWindow()
 
-        viewModel.entry.observe(viewLifecycleOwner, Observer {
-            binding.viewModel = viewModel
-        })
+        with(binding) {
 
-        prompt_button.setOnClickListener {
-            firebaseAnalytics.logEvent(CLICKED_PROMPT, null)
-            viewModel.getRandomPromptHintString()
-            val v = it as ImageView
-            val d = v.drawable as Animatable?
-            d?.start()
-            binding.viewModel = viewModel
-        }
+            promptButton.setOnClickListener {
+                val v = it as ImageView
+                val d = v.drawable as Animatable?
+                d?.start()
 
-        share_button.setOnClickListener {
-            firebaseAnalytics.logEvent(SHARED_ENTRY, null)
+                viewModel.changePrompt()
+            }
 
-            val message = viewModel.getShareContent()
-            val share = Intent(Intent.ACTION_SEND)
-            share.type = "text/plain"
-            share.putExtra(Intent.EXTRA_TEXT, message)
+            shareButton.setOnClickListener {
+                analytics.recordEvent(SHARED_ENTRY)
+                withState(viewModel, {
+                    openSharingScreen(it.entryContent, date.text.toString())
+                })
+            }
 
-            startActivity(Intent.createChooser(share, getString(R.string.share_progress)))
-        }
+            saveButton.setOnClickListener {
+                viewModel.saveEntry()
+            }
 
-        save_button.setOnClickListener {
-            val numEntries = arguments?.getInt(NUM_ENTRIES) ?: 0
-            val isNewEntry = arguments?.getBoolean(IS_NEW_ENTRY) ?: false
-            if (isNewEntry) {
-                val bundle = Bundle()
-                bundle.putInt(FirebaseAnalytics.Param.LEVEL, (numEntries + 1))
+            val showQuote = settings.shouldShowQuote()
+            if (!showQuote) {
+                inspiration.visibility = View.GONE
+            }
 
-                firebaseAnalytics.logEvent(FirebaseAnalytics.Event.LEVEL_UP, bundle)
-                if (milestones.contains(numEntries + 1)) {
-                    CelebrateDialogFragment.newInstance(numEntries + 1)
-                        .show(fragmentManager!!, "CelebrateDialogFragment")
+            inspiration.setOnLongClickListener {
+                withState(viewModel, {
+                    val quote = it.quote
+                    val clipboard =
+                        ContextCompat.getSystemService<ClipboardManager>(
+                            requireContext(),
+                            ClipboardManager::class.java
+                        )
+                    clipboard?.setPrimaryClip(ClipData.newPlainText("Gratitude quote", quote))
+                    analytics.recordEvent(COPIED_QUOTE)
+                    Toast.makeText(context, R.string.copied, Toast.LENGTH_SHORT).show()
+                })
+                true
+            }
+
+            val disposable = RxTextView.afterTextChangeEvents(entryText)
+                .debounce(100, TimeUnit.MILLISECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    viewModel.onTextChanged(it.editable().toString())
                 }
-            } else {
-                firebaseAnalytics.logEvent(EDITED_EXISTING_ENTRY, null)
-            }
-
-            viewModel.addNewEntry()
-            val imm =
-                activity?.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
-            imm?.hideSoftInputFromWindow(entry_text.windowToken, 0)
-
-            val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(activity)
-            val accessToken = sharedPrefs.getString("access-token", null)
-            val cadence = sharedPrefs.getString(BACKUP_CADENCE, "0") ?: "0"
-            if (accessToken != null && cadence == "2") {
-                val uploadWorkRequest = OneTimeWorkRequestBuilder<UploadToCloudWorker>()
-                    .addTag(DropboxUploader.PRESENTLY_BACKUP)
-                    .build()
-                WorkManager.getInstance(context!!).enqueue(uploadWorkRequest)
-            }
-
-            findNavController().navigateUp()
+            compositeDisposable.add(disposable)
         }
+    }
 
-        inspiration.setOnLongClickListener {
-            val quote = viewModel.getInspirationString()
-            val clipboard =
-                getSystemService<ClipboardManager>(context!!, ClipboardManager::class.java)
-            clipboard?.primaryClip = ClipData.newPlainText("Gratitude quote", quote)
-            firebaseAnalytics.logEvent(COPIED_QUOTE, null)
-            Toast.makeText(context, R.string.copied, Toast.LENGTH_SHORT).show()
-            true
-        }
+    private fun openSharingScreen(entryContent: String, entryDate: String) {
+        val fragment = SharingFragment.newInstance(entryDate, entryContent)
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .replace(R.id.container_fragment, fragment)
+            .addToBackStack(ENTRY_TO_SHARE)
+            .commit()
+    }
 
-        val disposable = RxTextView.afterTextChangeEvents(entry_text)
-            .debounce(500, TimeUnit.MILLISECONDS)
-            .skip(1) //skip data binding
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe {
-                viewModel.userEdited()
+    override fun invalidate() = withState(viewModel) { state ->
+        when (state.date) {
+            LocalDate.now() -> {
+                binding.date.text = resources.getString(R.string.today)
+                binding.thankfulFor.text = resources.getString(R.string.iam)
             }
-
-        compositeDisposable.add(disposable)
+            LocalDate.now().minusDays(1) -> {
+                binding.date.text = resources.getString(R.string.yesterday)
+                binding.thankfulFor.text = resources.getString(R.string.iwas)
+            }
+            else -> {
+                binding.date.text = state.date.toFullString()
+                binding.thankfulFor.text = resources.getString(R.string.iwas)
+            }
+        }
+        binding.inspiration.text = state.quote
+        binding.entryText.hint = state.hint
+        setEditText(state.entryContent)
+        binding.shareButton.visibility = if (state.isEmpty) View.GONE else View.VISIBLE
+        binding.promptButton.visibility = if (!state.isEmpty) View.GONE else View.VISIBLE
+        if (state.isSaved) {
+            onEntrySaved()
+        }
+        if (state.milestoneNumber != 0) {
+            onEntrySaved()
+            CelebrateDialogFragment.newInstance(state.milestoneNumber)
+                .show(requireActivity().supportFragmentManager, "CelebrateDialogFragment")
+        }
     }
 
     override fun onDestroy() {
@@ -176,16 +191,70 @@ class EntryFragment : DaggerFragment() {
         }
     }
 
-    private fun showUnsavedEntryDialog() {
+    private fun setEditText(newText: String) {
+        val oldText = binding.entryText.text.toString()
+        if (newText != oldText) {
+            binding.entryText.setText(newText)
+            binding.entryText.setSelection(newText.length)
+        }
+    }
+
+    private fun prepareWindow() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.entry) { v, insets ->
+            val sysWindow =
+                insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime())
+            v.updatePadding(bottom = sysWindow.bottom, top = sysWindow.top)
+            insets
+        }
+
+        val window = requireActivity().window
+        window.statusBarColor = Color.TRANSPARENT
+        val typedValue = TypedValue()
+        requireActivity().theme.resolveAttribute(R.attr.timelineBackgroundColor, typedValue, true)
+        setStatusBarColorsForBackground(window, typedValue.data)
+    }
+
+    override fun hideKeyboard() {
+        val imm = activity?.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
+        imm?.hideSoftInputFromWindow(binding.entryText.windowToken, 0)
+    }
+
+    private fun backupEntryIfNeeded() {
+        val dbxCredential = settings.getAccessToken()
+
+        val cadence = settings.getAutomaticBackupCadence()
+        if (dbxCredential != null && cadence == BackupCadence.EVERY_CHANGE) {
+            val uploadWorkRequest = OneTimeWorkRequestBuilder<UploadToCloudWorker>()
+                .addTag(DropboxUploader.PRESENTLY_BACKUP)
+                .build()
+            WorkManager.getInstance(requireContext()).enqueue(uploadWorkRequest)
+        }
+    }
+
+    private fun onEntrySaved() {
+        hideKeyboard()
+        backupEntryIfNeeded()
+        requireActivity().supportFragmentManager.popBackStack()
+    }
+
+    private fun showUnsavedEntryDialog(isFromSwipe: Boolean) {
         val alertDialog: AlertDialog? = activity?.let {
             val builder = AlertDialog.Builder(it)
             builder.apply {
-                setTitle(R.string.are_you_sure)
+                setTitle(if (isFromSwipe) R.string.are_you_sure_to_swipe else R.string.are_you_sure)
                 setMessage(R.string.unsaved_text)
-                setPositiveButton(R.string.continue_to_exit) { dialog, id ->
-                    findNavController().navigateUp()
+                setPositiveButton(R.string.continue_to_exit) { _, _ ->
+                    if (isFromSwipe) {
+                        //reset the entry and enable viewpager swiping
+                        viewModel.getEntry()
+                        return@setPositiveButton
+                    }
+                    requireActivity().supportFragmentManager.popBackStack()
                 }
                 setNegativeButton(R.string.cancel) { _, _ -> }
+                setOnDismissListener {
+                    parentCallback?.invoke()
+                }
             }
             // Create the AlertDialog
             builder.create()
@@ -194,19 +263,60 @@ class EntryFragment : DaggerFragment() {
     }
 
     companion object {
-        const val DATE = "date_key"
-        const val IS_NEW_ENTRY = "is_new_entry"
-        const val NUM_ENTRIES = "num_entries"
+        fun newInstance(
+            date: LocalDate,
+            numEntries: Int?,
+            isNewEntry: Boolean,
+            resources: Resources
+        ): EntryFragment {
+            if (isNewEntry && numEntries == null) {
+                throw IllegalArgumentException("New entries need to keep track of the total entries so far!")
+            }
 
-        fun newInstance(date: LocalDate = LocalDate.now()): EntryFragment {
+            val firstHintResource = if (date == LocalDate.now()) {
+                R.string.what_are_you_thankful_for
+            } else {
+                R.string.what_were_you_thankful_for
+            }
+
+            val firstHint = resources.getString(firstHintResource)
+
+            val prompts = resources.getStringArray(R.array.prompts)
+            prompts.shuffle() //randomise prompts
+            val quote = resources.getStringArray(R.array.inspirations).random()
+
             val fragment = EntryFragment()
-
-            val bundle = Bundle()
-            bundle.putString(DATE, date.toString())
-            fragment.arguments = bundle
-
+            fragment.arguments =
+                EntryArgs(
+                    date.toString(),
+                    isNewEntry,
+                    numEntries,
+                    quote,
+                    firstHint,
+                    prompts.toList()
+                ).asMavericksArgs()
             return fragment
         }
 
+        const val ENTRY_TO_SHARE = "ENTRY_TO_SHARE"
     }
+
+    override fun showSaveDialog() {
+        showUnsavedEntryDialog(true)
+    }
+
+    override fun anyEditsMade() = withState(viewModel) { it.editsWereMade }
+
+    private var parentCallback: (() -> Unit)? = null
+    override fun setParentCallback(action: () -> Unit) {
+        parentCallback = action
+    }
+
+}
+
+interface EntryScreenCallbacks {
+    fun showSaveDialog()
+    fun anyEditsMade(): Boolean
+    fun hideKeyboard()
+    fun setParentCallback(action: () -> Unit)
 }

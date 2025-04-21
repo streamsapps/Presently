@@ -1,61 +1,19 @@
 package journal.gratitude.com.gratitudejournal.util.backups
 
 import android.content.Context
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import journal.gratitude.com.gratitudejournal.di.IWorkerFactory
-import journal.gratitude.com.gratitudejournal.model.CloudUploadResult
-import journal.gratitude.com.gratitudejournal.model.UploadError
-import journal.gratitude.com.gratitudejournal.model.UploadSuccess
-import journal.gratitude.com.gratitudejournal.repository.EntryRepository
-import java.io.File
-import java.io.FileWriter
-import javax.inject.Inject
-import javax.inject.Provider
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 
-class UploadToCloudWorker(
-    private val context: Context,
-    params: WorkerParameters,
-    private val repository: EntryRepository,
-    private val cloudProvider: CloudProvider
-): CoroutineWorker(context, params) {
+@HiltWorker
+class UploadToCloudWorker @AssistedInject constructor(
+    @Assisted val appContext: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val uploader: Uploader
+) : CoroutineWorker(appContext, workerParams) {
     override suspend fun doWork(): Result {
-        //get items
-        val items = repository.getEntries()
-
-        //create temp file
-        val file = File.createTempFile("tempPresentlyBackup", null, context.getCacheDir())
-
-        //create csv
-        val fileExporter = FileExporter(CSVWriterImpl(FileWriter(file)))
-        val csvResult = when (val csvResult = fileExporter.exportToCSV(items, file)) {
-            is CsvCreated -> {
-                //upload to cloud
-                when (cloudProvider.uploadToCloud(csvResult.file)) {
-                    is UploadError -> Result.failure()
-                    is UploadSuccess -> Result.success()
-                }
-            }
-            is CsvError -> Result.failure()
-        }
-
-        //delete temp file
-        file.delete()
-
-        return csvResult
+        return uploader.uploadEntries(appContext)
     }
-
-    class Factory @Inject constructor(
-        private val context: Provider<Context>, // provide from Application Module
-        private val repository: Provider<EntryRepository>, // provide from Application Module
-        private val cloudProvider: Provider<CloudProvider>
-    ) : IWorkerFactory<UploadToCloudWorker> {
-        override fun create(params: WorkerParameters): UploadToCloudWorker {
-            return UploadToCloudWorker(context.get(), params, repository.get(), cloudProvider.get())
-        }
-    }
-}
-
-interface CloudProvider {
-    suspend fun uploadToCloud(file: File): CloudUploadResult
 }

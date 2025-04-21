@@ -1,5 +1,5 @@
 ## English
-*[NOTE TO TRANSLATORS: please keep the following line under 50 characters long]*
+*[NOTE TO TRANSLATORS: please keep the following line under 30 characters long]*
 
 Presently: A gratitude journal
 
@@ -16,8 +16,9 @@ Presently lets you:
 ⁕ Reflect back on your past moments of gratitude
 ⁕ Find motivation through quotes and prompts
 ⁕ Set daily reminders to continue your gratitude practice
-⁕ Search your old entries
 ⁕ Lock your entries with fingerprint or face id
+⁕ Automatically back up your entries to Dropbox
+⁕ Search your old entries
 ⁕ Share your entries with family and friends
 ⁕ Export/import your entries
 ⁕ Switch to your favorite color scheme
@@ -93,7 +94,7 @@ Presently позволит вам:
 ⁕ Найти мотивацию с помощью цитат и подсказок
 ⁕ Установить ежедневные напоминания, чтобы продолжать практику благодарности
 ⁕ Искать ваши старые записи
-⁕ Заблокируйте свои записи с помощью отпечатка пальца или идентификатора лица
+⁕ Заблокировать свои записи с помощью отпечатка пальца или идентификатора лица
 ⁕ Поделиться своими записями с семьей и друзьями
 ⁕ Делать резервные копии и импортировать ваши записи
 ⁕ Настроить внешний вид приложения на свой вкус
@@ -222,3 +223,144 @@ aparelho e sob seu comando.
 يتيح لك  تطبيق برزنتلي: ⁕ تسجيل إدخالات الامتنان يومياً ⁕ مراجعة و تأمل لحظات الامتنان السابقة ⁕ ايجاد الحافز من خلال اقوال و عبارات عن الحياة ⁕ تعيين تذكيرات يومية لمتابعة التدوين و ممارسة الامتنان ⁕ البحث عن إدخالاتك القديمة ⁕ مشاركة إدخالاتك القديمة مع عائلتك وأصدقائك ⁕ تصدير و استيراد إدخالاتك ⁕ تغيير ألوان  التطبيق
 
 تطبيق برزنتلي مجاني وخالي من الاعلانات. تحفظ جميع إدخالاتك على جهازك و تحت سيطرتك.
+
+
+## Dutch
+
+Presently: een dankbaarheidsdagboek
+
+Vier je dagelijkse leven met Presently, een gratis en privé dankbaarheidsdagboek
+
+Oefen dankbaarheid met deze eenvoudige, altijd gratis en privé dankbaarheidsdagboek-app.
+
+Met Presently kunt je:
+⁕ Dagelijks je dankbaarheidsdagboek bijhouden
+⁕ Terugblikken op je eerdere dankbaarheidsmomenten
+⁕ Motivatie vinden door middel van citaten en prompts
+⁕ Dagelijkse herinneringen instellen om je dankbaarheidspraktijk vol te houden
+⁕ Je dankbaarheidsdagboek doorzoeken
+⁕ Vergrendel je dankbaarheidsdagboek met een vingerafdruk of gezichts-id
+⁕ Deel je dankbaarheidsdagboek met familie en vrienden
+⁕ Exporteer/importeer je dankbaarheidsdagboek
+⁕ Pas Presently aan naar je favoriete kleurenschema
+
+Presently is 100% gratis en advertentievrij. Al je notities blijven op je eigen apparaat en onder je eigen beheer.
+
+
+## Croatian
+Presently: časopis zahvalnosti
+
+Proslavite svoj svakodnevni život s Presently, besplatnim i privatnim dnevnikom zahvalnosti
+
+Vježbajte zahvalnost pomoću ove jednostavne, uvijek besplatne i privatne aplikacije za dnevnike zahvalnosti.
+
+Presently vam omogućuje: 
+⁕ Bilježenje dnevnih odrednica zahvalnosti 
+⁕ Osvrt na svoje trenutke zahvalnosti 
+⁕ Pronalazak motivacije pomoću citata i upita 
+⁕ Postavljanje dnevnih podsjetnike zaa nastavak prakse zahvalnosti 
+⁕ Zaključamje svojih unosa otiskom prsta ili licem 
+⁕ Automatsku izradu sigurnosne kopije svojih unosa na Dropbox 
+⁕ Pretraživaje starih unosa 
+⁕ Podijeljenje svojih unosa s obitelji i prijateljima 
+⁕ Izvoz / izvoz svojih unosa 
+⁕ Prebacvanje na svoju omiljenu shemu boja
+
+Presently je 100% besplatno i bez oglasa. Svi vaši unosi ostaju na vašem uređaju i pod vašom kontrolom.
+
+
+## Romanian
+Presently: un jurnal al recunoștinței
+
+Bucură-te de viață cu Presently, un jurnal de recunoștință gratuit și privat
+
+Practicați recunoștința cu această aplicație simplă, întotdeauna gratuită și privată.
+
+În prezent vă permite să: ⁕Scrieți zilnic un motiv pentru care sunteți recunoscător ⁕ Reflectați asupra momentelor trecute în care ați fost recunoscător ⁕ Găsiți motivația prin citate și întrebări ajutătoare ⁕ Setați alarme zilnice pentru a continua practicarea recunoștinței ⁕ Deblocarea aplicației cu ajutorul amprentei digitale sau a ID-ului facial⁕ Faceți backup automat al datelor folosind Dropbox ⁕ Vă găsiți datele din trecut ⁕ Împărtășiți datele cu familia și prietenii ⁕ Exportați / importați datele ⁕ Schimbați temele și culorile preferate
+
+Presently este 100% gratuit și fără anunțuri. Toate informațiile rămân pe dispozitiv și sub controlul tău.
+
+
+## Turkish
+Presently: Minnettarlık günlüğü
+
+Gündelik hayatını ücretsiz ve özel minnettarlık günlüğü Presently ile kutla
+
+Bu basit, her zaman ücretsiz ve özel minnettarlık günlüğü uygulamasıyla minnettarlık alıştırması yapabilirsin.
+
+Presently şunları sağlar:
+⁕ Günlük minnettarlık yazılarını kaydet
+⁕ Geçmişteki minnettarlık anlarına geri dön
+⁕ Alıntılar ve yönlendirmeler yoluyla motivasyon bul
+⁕ Minnettarlık alıştırmasına devam etmek için günlük hatırlatıcılar ayarla
+⁕ Yazılarını parmak izi veya yüz kimliği ile kilitle
+⁕ Yazılarını otomatik olarak Dropbox'a yedekle
+⁕ Eski yazılarını ara
+⁕ Yazılarını ailen ve arkadaşlarınla paylaş
+⁕ Girişlerini içe / dışa aktar
+⁕ En sevdiğin renk şemasını kullan
+
+Presently %100 ücretsiz ve reklamsızdır. Tüm yazıların cihazında ve kontrolünde kalır.
+
+## Afrikaans
+Presently: 'n Dankbaarheidsdagboek
+
+Vier jou daaglikse lewe met Presently, 'n gratis en privaat digitale dankbaarheidsdagboek
+
+Oefen en versterk jou vermoë om dankbaarheid te ervaar met hierdie eenvoudige, altyd gratis en private dankbaarheidsdagboek app.
+
+Presently laat jou toe om:
+⁕ Daaglikse inskrywings te maak rondom enige iets waarvoor jy dankbaar is
+⁕ Na te dink aan oomblikke waar jy dankbaar gevoel het
+⁕ Motivering te vind deur aanhalings en herinneringe
+⁕ Skep van daaglikse herinnerings om jou dankbaarheid oefening vol te hou
+⁕ Beveilig jou dagboek inskrywings via fingerafdruk of met jou gesig beeld beskerming
+⁕ Outomatiese Stoor van jou inskrywings met Dropbox
+⁕ Soek vir vorige inskrywings met sleutelwoorde en datums
+⁕ Deel 'n inskrywing met jou familie en friende
+⁕ Laai af/lees in jou inskrywings
+⁕ Maak gebruik van jou gunsteling kleur skema met vele om van te kies
+
+Presently is 100% verniet en advertensie vry. Al jou inskrywings leef slegs op jou toestel/foon en binne jou beheer.
+
+## Simplified Chinese
+Presently：感恩日记
+
+使用免费、私人的感恩日记 Presently 来记录日常感恩点滴
+
+使用本款简洁、私人且永久免费的日记应用练习感恩。
+
+Presently 能够
+⁕ 记录日常的感恩点滴
+⁕ 回顾过往的感恩时光
+⁕ 从名言与提示中汲取动力
+⁕ 定时提醒练习感恩
+⁕ 对感恩记录进行指纹或面部锁定
+⁕ 自动备份感恩记录至 Dropbox
+⁕ 搜索过往记录
+⁕ 与亲友分享您的感恩片刻
+⁕ 导入/导出您的感恩点滴
+⁕ 切换至您最喜欢的配色方案
+
+Presently 完全免费，无广告。您的所有记录均保存在您的设备中，由您掌控。
+
+## Traditional Chinese
+Presently：感恩日記
+
+使用免費、私人的感恩日記 Presently 來記錄日常感恩點滴
+
+使用本款簡潔、私人且永久免費的日記應用練習感恩。
+
+Presently 能夠
+⁕ 記錄日常的感恩點滴
+⁕ 回顧過往的感恩時光
+⁕ 從名言與提示中汲取動力
+⁕ 定時提醒練習感恩
+⁕ 對感恩記錄進行指紋或面部鎖定
+⁕ 自動備份感恩記錄至 Dropbox
+⁕ 搜索過往記錄
+⁕ 與親友分享您的感恩片刻
+⁕ 導入/導出您的感恩點滴
+⁕ 切換至您最喜歡的配色方案
+
+Presently 完全免費，無廣告。您的所有記錄均保存在您的設備中，由您掌控。

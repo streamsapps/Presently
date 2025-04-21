@@ -3,8 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="journal.gratitude.com.gratitudejournal">
 
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
         android:name=".GratitudeApplication"
@@ -15,8 +15,8 @@
         android:theme="@style/AppTheme">
         <activity
             android:name=".ContainerActivity"
-            android:windowSoftInputMode="adjustResize">
-
+            android:windowSoftInputMode="adjustResize"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -25,10 +25,12 @@
         <activity
             android:name="com.dropbox.core.android.AuthActivity"
             android:configChanges="orientation|keyboard"
-            android:launchMode="singleTask">
+            android:launchMode="singleTask"
+            android:exported="true">
             <intent-filter>
                 <data android:scheme="db-${dropboxAppKey}" />
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
@@ -36,8 +38,19 @@
 
         <receiver android:name=".util.reminders.ReminderReceiver" />
 
-        <receiver android:name=".util.reminders.NotificationResetReceiver"
-            android:enabled="true">
+        <receiver
+            android:name=".util.reminders.AlarmPermissionReceiver"
+            android:enabled="true"
+            android:exported="false"> <!-- If "false", the only messages the broadcast receiver can receive are those sent by the system, components of the same application, or applications with the same user ID.-->
+            <intent-filter>
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".util.reminders.NotificationResetReceiver"
+            android:enabled="true"
+            android:exported="false"> <!-- If "false", the only messages the broadcast receiver can receive are those sent by the system, components of the same application, or applications with the same user ID.-->
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
@@ -45,28 +58,22 @@
             </intent-filter>
         </receiver>
 
+
+        <!-- Disabling default initializer for WorkManager so we can have our own custom init in GratitudeApplication -->
         <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.provider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/provider_paths"/>
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            tools:node="remove">
         </provider>
 
-        <provider
-            android:name="androidx.work.impl.WorkManagerInitializer"
-            android:authorities="${applicationId}.workmanager-init"
-            android:enabled="false"
-            android:exported="false"
-            tools:replace="android:authorities" />
-
-        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
-
         <meta-data
-                android:name="com.google.firebase.messaging.default_notification_icon"
-                android:resource="@drawable/ic_app_icon" />
+            android:name="google_analytics_adid_collection_enabled"
+            android:value="false" />
+
     </application>
+
+    <queries>
+        <package android:name="com.dropbox.android" />
+    </queries>
 
 </manifest>

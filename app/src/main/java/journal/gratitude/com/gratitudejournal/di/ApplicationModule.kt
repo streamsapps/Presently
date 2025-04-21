@@ -1,21 +1,29 @@
 package journal.gratitude.com.gratitudejournal.di
 
 import android.content.Context
-import dagger.Binds
+import com.presently.coroutine_utils.AppCoroutineDispatchers
 import dagger.Module
 import dagger.Provides
-import journal.gratitude.com.gratitudejournal.repository.EntryRepository
-import journal.gratitude.com.gratitudejournal.repository.EntryRepositoryImpl
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
 import journal.gratitude.com.gratitudejournal.room.EntryDao
 import journal.gratitude.com.gratitudejournal.room.EntryDatabase
+import kotlinx.coroutines.Dispatchers
 import javax.inject.Singleton
 
-
-@Module(includes = [ApplicationModuleBinds::class])
+@Module
+@InstallIn(SingletonComponent::class)
 object ApplicationModule {
 
-    @JvmStatic
     @Singleton
+    @Provides
+    fun provideCoroutineDispatchers() = AppCoroutineDispatchers(
+        io = Dispatchers.IO,
+        computation = Dispatchers.Default,
+        main = Dispatchers.Main
+    )
+
     @Provides
     fun provideEntryDao(
         database: EntryDatabase
@@ -23,19 +31,9 @@ object ApplicationModule {
         return database.entryDao()
     }
 
-    @JvmStatic
-    @Singleton
     @Provides
-    fun provideDatabase(context: Context): EntryDatabase {
+    fun provideDatabase(@ApplicationContext context: Context): EntryDatabase {
         return EntryDatabase.getDatabase(context)
     }
 
-}
-
-@Module
-abstract class ApplicationModuleBinds {
-
-    @Singleton
-    @Binds
-    abstract fun bindRepository(repo: EntryRepositoryImpl): EntryRepository
 }

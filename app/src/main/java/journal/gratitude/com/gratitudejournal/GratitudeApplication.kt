@@ -1,22 +1,32 @@
 package journal.gratitude.com.gratitudejournal
 
+import android.app.Application
+import android.content.Context
+import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import androidx.work.WorkManager
+import com.airbnb.mvrx.mocking.MockableMavericks
+import com.google.android.play.core.splitcompat.SplitCompat
 import com.jakewharton.threetenabp.AndroidThreeTen
-import dagger.android.AndroidInjector
-import dagger.android.DaggerApplication
-import io.github.inflationx.calligraphy3.CalligraphyConfig
-import io.github.inflationx.calligraphy3.CalligraphyInterceptor
-import io.github.inflationx.viewpump.ViewPump
-import journal.gratitude.com.gratitudejournal.di.DaggerApplicationComponent
-import journal.gratitude.com.gratitudejournal.di.DaggerAwareWorkerFactory
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EarlyEntryPoint
+import dagger.hilt.android.EarlyEntryPoints
+import dagger.hilt.android.HiltAndroidApp
+import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
 
-open class GratitudeApplication: DaggerApplication() {
+@HiltAndroidApp
+class GratitudeApplication : BaseGratitudeApplication()
 
-    override fun applicationInjector(): AndroidInjector<out DaggerApplication> {
-        return DaggerApplicationComponent.factory().create(applicationContext, this)
+open class BaseGratitudeApplication: Application() {
+
+    // Hilt test applications cannot use field injection, so you an entry point instead
+    @EarlyEntryPoint
+    @InstallIn(SingletonComponent::class)
+    interface ApplicationEarlyEntryPoint {
+        fun getWorkerFactory(): HiltWorkerFactory
     }
+
 
     override fun onCreate() {
         super.onCreate()
@@ -25,25 +35,22 @@ open class GratitudeApplication: DaggerApplication() {
 
         AndroidThreeTen.init(this)
 
-        ViewPump.init(
-            ViewPump.builder()
-                .addInterceptor(
-                    CalligraphyInterceptor(
-                        CalligraphyConfig.Builder()
-                            .setDefaultFontPath("fonts/Larsseit-Medium.ttf")
-                            .setFontAttrId(R.attr.fontPath)
-                            .build())
-                )
-                .build())
+        MockableMavericks.initialize(this)
     }
 
-    @Inject
-    lateinit var daggerAwareWorkerFactory: DaggerAwareWorkerFactory
-
     private fun configureWorkManager() {
+        val earlyEntryPoint = EarlyEntryPoints.get(this, ApplicationEarlyEntryPoint::class.java)
+        val daggerAwareWorkerFactory = earlyEntryPoint.getWorkerFactory()
         val config = Configuration.Builder()
             .setWorkerFactory(daggerAwareWorkerFactory)
             .build()
         WorkManager.initialize(this, config)
     }
+
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(base)
+        // Emulates installation of future on demand modules using SplitCompat.
+        SplitCompat.install(this)
+    }
+
 }
